@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="checkout-page">
+  <h1>Checkout</h1>
+
+  <section class="checkout-grid">
+    <div>
+      <h2>Your Order</h2>
+      <ul id="orderList" class="order-list"></ul>
+      <div class="cart-summary">
+        <span>Total</span>
+        <strong id="orderTotal">&#8358;0</strong>
+      </div>
+    </div>
+
+    <form class="checkout-form" id="checkoutForm" novalidate>
+      <h2>Customer Details</h2>
+      <label>
+        Full Name
+        <input id="customerName" placeholder="Full Name">
+      </label>
+      <label>
+        Email
+        <input id="email" type="email" placeholder="Email">
+      </label>
+      <label>
+        Address
+        <input id="address" placeholder="Address">
+      </label>
+      <button type="submit">Place Order</button>
+      <p class="cart-message" id="orderMessage"></p>
+    </form>
+  </section>
+</main>
+
+<script src="../script.js"></script>
+<script>
+const checkoutSession = JSON.parse(localStorage.getItem("retrokitsSession") || sessionStorage.getItem("retrokitsSession") || "null");
+
+if (!checkoutSession) {
+  window.location.href = "login.html?returnTo=checkout";
+}
+
+renderCheckoutPage();
+
+const customerName = document.getElementById("customerName");
+const email = document.getElementById("email");
+const address = document.getElementById("address");
+
+[customerName, email, address].forEach(input => {
+  input.dataset.placeholder = input.placeholder;
+  input.addEventListener("input", () => {
+    input.classList.remove("input-error");
+    input.placeholder = input.dataset.placeholder;
+  });
+});
+
+document.getElementById("checkoutForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const message = document.getElementById("orderMessage");
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+
+  [
+    { input: customerName, valid: customerName.value.trim(), error: "Enter your full name" },
+    { input: email, valid: emailIsValid, error: "Enter a valid email" },
+    { input: address, valid: address.value.trim(), error: "Enter your address" }
+  ].forEach(field => {
+    field.input.classList.toggle("input-error", !field.valid);
+    if (!field.valid) {
+      field.input.value = "";
+      field.input.placeholder = field.error;
+    }
+  });
+
+  if (!customerName.value.trim() || !emailIsValid || !address.value.trim()) {
+    message.innerText = "";
+    message.classList.remove("show");
+    return;
+  }
+
+  if (cart.length === 0) {
+    message.innerText = "Your cart is empty.";
+    message.classList.add("show");
+    return;
+  }
+
+  const orderItems = cartItems();
+  const orderTotal = cartTotal();
+  const ordersKey = "retrokitsOrders";
+  const savedOrders = JSON.parse(localStorage.getItem(ordersKey)) || {};
+  const orderEmail = checkoutSession.email;
+  const order = {
+    id: `RK-${Date.now().toString().slice(-6)}`,
+    date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    status: "processing",
+    total: orderTotal,
+    customer: {
+      name: customerName.value.trim(),
+      email: email.value.trim(),
+      address: address.value.trim()
+    },
+    items: orderItems.map(item => ({
+      displayName: item.displayName,
+      size: item.size,
+      quantity: item.quantity,
+      subtotal: item.subtotal
+    }))
+  };
+
+  savedOrders[orderEmail] = [order, ...(savedOrders[orderEmail] || [])];
+  localStorage.setItem(ordersKey, JSON.stringify(savedOrders));
+
+  clearCart();
+  renderCheckoutPage();
+  message.innerText = "Order placed successfully.";
+  message.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "../index.html";
+  }, 1200);
+});
+</script>
+
+</body>
+</html>

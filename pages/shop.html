@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shop</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="shop-page">
+  <div class="shop-layout">
+    <aside class="shop-sidebar" id="shopControls">
+      <div class="control-panel">
+        <h2 class="panel-heading">Search</h2>
+        <div class="panel-body" id="searchPanel">
+          <input class="shop-search-input" id="shopSearch" type="search">
+        </div>
+      </div>
+
+    </aside>
+
+    <section class="shop-results">
+      <p id="shopEmpty" class="shop-empty"></p>
+      <div class="grid shop-grid" id="shop-grid"></div>
+      <nav class="pagination" id="shopPagination"></nav>
+    </section>
+  </div>
+</main>
+
+<script src="../script.js"></script>
+<script>
+const welcomeMessage = sessionStorage.getItem("retrokitsWelcome");
+
+if (welcomeMessage) {
+  sessionStorage.removeItem("retrokitsWelcome");
+  const welcomeAlert = document.createElement("div");
+  welcomeAlert.className = "welcome-alert";
+  welcomeAlert.setAttribute("role", "alert");
+  welcomeAlert.textContent = welcomeMessage;
+  document.body.appendChild(welcomeAlert);
+
+  setTimeout(() => {
+    welcomeAlert.remove();
+  }, 2000);
+}
+</script>
+</body>
+</html>

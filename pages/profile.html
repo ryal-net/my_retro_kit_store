@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link is-current" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="profile-page">
+  <section class="profile-guest" id="profileGuest" hidden>
+    <p class="eyebrow">Profile</p>
+    <h1>Sign in to view your profile</h1>
+    <p>Your account keeps your placed orders, customer details, and checkout history in one place.</p>
+    <a class="btn" href="login.html?returnTo=profile">Sign In</a>
+  </section>
+
+  <section class="profile-dashboard" id="profileDashboard" hidden>
+    <div class="profile-dashboard-grid">
+      <div class="dashboard-card profile-summary-card">
+        <img class="profile-avatar" src="../assets/profile-picture.jpg" alt="" width="84" height="84">
+        <h2 id="profileName"></h2>
+        <p id="profileEmail"></p>
+        <div class="profile-stats">
+          <div>
+            <span>Orders</span>
+            <strong id="orderCount">0</strong>
+          </div>
+          <div>
+            <span>Total Spent</span>
+            <strong id="totalSpent">&#8358;0</strong>
+          </div>
+          <div>
+            <span>Member Since</span>
+            <strong id="memberSince">—</strong>
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="profileLogout" type="button">Log Out</button>
+      </div>
+
+      <div class="dashboard-card mini-cart-card">
+        <h3>Quick Cart</h3>
+        <div id="miniCartContent">
+          <div class="mini-cart-empty">Your cart is empty</div>
+        </div>
+      </div>
+
+      <div class="dashboard-card current-deliveries-card">
+        <h3>Current Deliveries</h3>
+        <div id="currentDeliveriesContent">
+          <div class="empty-state">
+            <h4>No Active Orders</h4>
+            <p>You don't have any orders in transit</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card order-history-card">
+        <h3>Order History</h3>
+
+        <div class="search-container">
+          <input type="text" class="search-input" id="searchOrderId" placeholder="Search by Order ID...">
+          <div class="date-range-group">
+            <input type="date" id="dateFrom" title="From date">
+            <input type="date" id="dateTo" title="To date">
+          </div>
+          <button class="search-btn" id="searchBtn">Search</button>
+        </div>
+
+        <div id="orderHistoryContent">
+          <div class="empty-state">
+            <h4>No Orders Yet</h4>
+            <p>Start shopping to see your order history</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="reorder-modal" id="reorderModal">
+  <div class="reorder-modal-content">
+    <h3>Reorder Items</h3>
+    <ul class="reorder-items-list" id="reorderItems"></ul>
+    <p style="font-size: 13px; color: var(--muted); margin: 0;">Total: <strong id="reorderTotal">&#8358;0</strong></p>
+    <div class="reorder-modal-actions">
+      <button class="reorder-confirm" id="confirmReorder">Add to Cart</button>
+      <button class="reorder-cancel" id="cancelReorder">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="../script.js"></script>
+<script>
+const usersKey = "retrokitsUsers";
+const sessionKey = "retrokitsSession";
+const ordersKey = "retrokitsOrders";
+const session = JSON.parse(localStorage.getItem(sessionKey) || sessionStorage.getItem(sessionKey) || "null");
+const users = JSON.parse(localStorage.getItem(usersKey)) || [];
+const signedInUser = session ? users.find(user => user.email === session.email) : null;
+const guest = document.getElementById("profileGuest");
+const dashboard = document.getElementById("profileDashboard");
+
+function userOrders(email) {
+  const allOrders = JSON.parse(localStorage.getItem(ordersKey)) || {};
+  return allOrders[email] || [];
+}
+
+function getActiveOrders(orders) {
+  return orders.filter(order => {
+    const status = order.status;
+    return status && status !== "delivered";
+  });
+}
+
+function calculateDeliveryDate(orderDate) {
+  const dateObj = new Date(orderDate);
+  if (isNaN(dateObj.getTime())) {
+    const parts = orderDate.split(" ");
+    const monthMap = {"Jan": 0, "Feb": 1, "Mar": 2, "Apr": 3, "May": 4, "Jun": 5, "Jul": 6, "Aug": 7, "Sep": 8, "Oct": 9, "Nov": 10, "Dec": 11};
+    const day = parseInt(parts[0], 10);
+    const month = monthMap[parts[1]];
+    const year = parseInt(parts[2], 10);
+    dateObj.setFullYear(year, month, day);
+  }
+  const deliveryDate = new Date(dateObj);
+  deliveryDate.setDate(deliveryDate.getDate() + 5);
+  return deliveryDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function renderProgressTracker(order) {
+  const statuses = ["processing", "shipped", "out-for-delivery", "delivered"];
+  const currentStatus = order.status || "processing";
+  const currentIndex = statuses.indexOf(currentStatus);
+
+  const statusLabels = {
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "out-for-delivery": "In Transit",
+    "delivered": "Delivered"
+  };
+
+  return `
+    <div class="progress-tracker">
+      ${statuses.map((status, index) => `
+        <div class="status-step ${index <= currentIndex ? (index === currentIndex ? 'active' : 'completed') : ''}">
+          <div class="status-dot"></div>
+          <div class="status-label">${statusLabels[status]}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCurrentDeliveries() {
+  const orders = userOrders(signedInUser.email);
+  const activeOrders = getActiveOrders(orders);
+
+  if (activeOrders.length === 0) {
+    document.getElementById("currentDeliveriesContent").innerHTML = `
+      <div class="empty-state">
+        <h4>No Active Orders</h4>
+        <p>You don't have any orders in transit</p>
+      </div>
+    `;
+    return;
+  }
+
+  const html = `
+    <ul class="deliveries-list">
+      ${activeOrders.map(order => `
+        <li class="delivery-item">
+          <div class="delivery-header">
+            <span class="delivery-order-id">#${order.id}</span>
+            <span class="delivery-date">Est. ${calculateDeliveryDate(order.date)}</span>
+          </div>
+          ${renderProgressTracker(order)}
+          <div class="delivery-info">
+            ${order.items.length} item(s) • ${order.items.reduce((sum, item) => sum + item.quantity, 0)} units
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+  document.getElementById("currentDeliveriesContent").innerHTML = html;
+}
+
+function renderMiniCart() {
+  const items = cartItems();
+  const total = cartTotal();
+
+  if (items.length === 0) {
+    document.getElementById("miniCartContent").innerHTML = `
+      <div class="mini-cart-empty">Your cart is empty</div>
+    `;
+    return;
+  }
+
+  const displayItems = items.slice(0, 3);
+  const moreCount = items.length - 3;
+
+  let html = `
+    <ul class="mini-cart-items">
+      ${displayItems.map(item => `
+        <li class="mini-cart-item">
+          <strong>${item.displayName}</strong> • Size ${item.size} x ${item.quantity}
+        </li>
+      `).join('')}
+      ${moreCount > 0 ? `<li class="mini-cart-item">...and ${moreCount} more item(s)</li>` : ''}
+    </ul>
+    <div class="mini-cart-summary">
+      <div class="mini-cart-total">
+        <span>Subtotal:</span>
+        <span>${formatPrice(total)}</span>
+      </div>
+      <div class="mini-cart-actions">
+        <a href="cart.html" class="btn btn-secondary">View Full Cart</a>
+        <a href="checkout.html" class="btn">Checkout</a>
+      </div>
+    </div>
+  `;
+  document.getElementById("miniCartContent").innerHTML = html;
+}
+
+function renderOrderHistory(orders = null) {
+  if (!orders) {
+    orders = userOrders(signedInUser.email);
+  }
+
+  const deliveredOrders = orders.filter(order => order.status === "delivered" || !order.status);
+
+  if (deliveredOrders.length === 0) {
+    document.getElementById("orderHistoryContent").innerHTML = `
+      <div class="empty-state">
+        <h4>No Order History</h4>
+        <p>Your completed orders will appear here</p>
+      </div>
+    `;
+    return;
+  }
+
+  const html = `
+    <ul class="order-history-list">
+      ${deliveredOrders.map(order => `
+        <li class="order-history-item">
+          <div class="order-row">
+            <div class="order-id-date">
+              <div class="order-id">#${order.id}</div>
+              <div class="order-date">${order.date}</div>
+            </div>
+            <div class="order-items-summary">
+              ${order.items.length} item(s) • ${order.items.map(i => i.displayName).join(", ")}
+            </div>
+            <div class="order-total">${formatPrice(order.total)}</div>
+            <div class="order-action">
+              <button onclick="handleReorder('${order.id}')">Reorder</button>
+            </div>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+  document.getElementById("orderHistoryContent").innerHTML = html;
+}
+
+function searchOrders() {
+  const orderId = document.getElementById("searchOrderId").value.toLowerCase();
+  const dateFrom = document.getElementById("dateFrom").value;
+  const dateTo = document.getElementById("dateTo").value;
+
+  let orders = userOrders(signedInUser.email);
+
+  if (orderId) {
+    orders = orders.filter(order => order.id.toLowerCase().includes(orderId));
+  }
+
+  if (dateFrom) {
+    orders = orders.filter(order => new Date(order.date) >= new Date(dateFrom));
+  }
+
+  if (dateTo) {
+    orders = orders.filter(order => new Date(order.date) <= new Date(dateTo));
+  }
+
+  renderOrderHistory(orders);
+}
+
+function handleReorder(orderId) {
+  const orders = userOrders(signedInUser.email);
+  const order = orders.find(o => o.id === orderId);
+
+  if (!order) return;
+
+  const reorderModal = document.getElementById("reorderModal");
+  const reorderItems = document.getElementById("reorderItems");
+  const reorderTotal = document.getElementById("reorderTotal");
+
+  reorderItems.innerHTML = order.items.map(item => `
+    <li class="reorder-item">
+      <div class="reorder-item-name">${item.displayName}</div>
+      <div class="reorder-item-details">Size ${item.size} • Qty: ${item.quantity} • ${formatPrice(item.subtotal)}</div>
+    </li>
+  `).join('');
+
+  reorderTotal.textContent = formatPrice(order.total);
+
+  document.getElementById("confirmReorder").onclick = () => confirmReorder(order);
+  document.getElementById("cancelReorder").onclick = () => reorderModal.classList.remove("show");
+
+  reorderModal.classList.add("show");
+}
+
+function confirmReorder(order) {
+  const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  order.items.forEach(item => {
+    const existingItem = existingCart.find(c => c.name === item.displayName && c.size === item.size);
+    if (existingItem) {
+      existingItem.quantity = (existingItem.quantity || 1) + item.quantity;
+    } else {
+      existingCart.push({
+        name: item.displayName,
+        size: item.size,
+        quantity: item.quantity
+      });
+    }
+  });
+
+  localStorage.setItem("cart", JSON.stringify(existingCart));
+  document.getElementById("reorderModal").classList.remove("show");
+
+  alert("Items added to cart! Redirecting to checkout...");
+  window.location.href = "checkout.html";
+}
+
+if (!signedInUser) {
+  guest.hidden = false;
+} else {
+  const orders = userOrders(signedInUser.email);
+  const total = orders.reduce((sum, order) => sum + order.total, 0);
+  dashboard.hidden = false;
+
+  document.getElementById("profileName").innerText = signedInUser.name;
+  document.getElementById("profileEmail").innerText = signedInUser.email;
+  document.getElementById("orderCount").innerText = orders.length;
+  document.getElementById("totalSpent").innerText = formatPrice(total);
+  document.getElementById("memberSince").innerText = "You";
+
+  renderCurrentDeliveries();
+  renderMiniCart();
+  renderOrderHistory();
+
+  document.getElementById("searchBtn").addEventListener("click", searchOrders);
+  document.getElementById("searchOrderId").addEventListener("keyup", searchOrders);
+}
+
+document.getElementById("profileLogout")?.addEventListener("click", () => {
+  localStorage.removeItem(sessionKey);
+  sessionStorage.removeItem(sessionKey);
+  window.location.reload();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="auth-page">
+  <section class="auth-panel" id="authPanel">
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab active" id="showLogin" type="button">Sign In</button>
+      <button class="auth-tab" id="showSignup" type="button">Create Account</button>
+    </div>
+
+    <form class="auth-form" id="authForm" novalidate>
+      <div class="field-group" id="nameField" hidden>
+        <label>
+          Full Name
+          <input id="accountName" autocomplete="name" placeholder="Ryal-Net">
+        </label>
+        <p class="field-error" id="nameError"></p>
+      </div>
+
+      <div class="field-group">
+        <label>
+          Email
+          <input id="email" type="email" autocomplete="email" placeholder="xxx@gmail.com">
+        </label>
+        <p class="field-error" id="emailError"></p>
+      </div>
+
+      <div class="field-group">
+        <label>
+          Password
+          <span class="password-field">
+            <input id="password" type="text" autocomplete="current-password" spellcheck="false" placeholder="At least 8 characters">
+            <button id="togglePassword" type="button">Show</button>
+          </span>
+        </label>
+        <p class="field-error" id="passwordError"></p>
+      </div>
+
+      <label class="remember-row">
+        <input id="rememberMe" type="checkbox">
+        Keep me signed in
+      </label>
+
+      <button id="submitAuth" type="submit">Sign In</button>
+      <p class="form-message" id="authMessage"></p>
+    </form>
+  </section>
+
+  <section class="auth-panel account-panel" id="accountPanel" hidden>
+    <p class="eyebrow">Signed In</p>
+    <h2 id="accountGreeting"></h2>
+    <p id="accountEmail"></p>
+    <div class="cart-actions">
+      <a class="btn" href="shop.html">Shop Kits</a>
+      <button class="btn btn-secondary" id="logout" type="button">Log Out</button>
+    </div>
+  </section>
+</main>
+
+<script src="../script.js"></script>
+<script>
+const usersKey = "retrokitsUsers";
+const sessionKey = "retrokitsSession";
+const authPanel = document.getElementById("authPanel");
+const accountPanel = document.getElementById("accountPanel");
+const authForm = document.getElementById("authForm");
+const nameField = document.getElementById("nameField");
+const accountName = document.getElementById("accountName");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const rememberMe = document.getElementById("rememberMe");
+const authMessage = document.getElementById("authMessage");
+const showLogin = document.getElementById("showLogin");
+const showSignup = document.getElementById("showSignup");
+const submitAuth = document.getElementById("submitAuth");
+const togglePassword = document.getElementById("togglePassword");
+let mode = "login";
+let passwordMaskTimer;
+let rawPassword = "";
+const passwordMaskDelay = 220;
+const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+
+function users() {
+  return JSON.parse(localStorage.getItem(usersKey)) || [];
+}
+
+function saveUsers(nextUsers) {
+  localStorage.setItem(usersKey, JSON.stringify(nextUsers));
+}
+
+function setMode(nextMode) {
+  mode = nextMode;
+  const isSignup = mode === "signup";
+  nameField.hidden = !isSignup;
+  submitAuth.innerText = isSignup ? "Create Account" : "Sign In";
+  showLogin.classList.toggle("active", !isSignup);
+  showSignup.classList.toggle("active", isSignup);
+  authMessage.innerText = "";
+  authForm.reset();
+  resetPasswordField();
+}
+
+function showAccount(user) {
+  authPanel.hidden = true;
+  accountPanel.hidden = false;
+  document.getElementById("accountGreeting").innerText = `Welcome, ${user.name}`;
+  document.getElementById("accountEmail").innerText = user.email;
+}
+
+function showAuth() {
+  authPanel.hidden = false;
+  accountPanel.hidden = true;
+}
+
+function setSession(user) {
+  const storage = rememberMe.checked ? localStorage : sessionStorage;
+  storage.setItem(sessionKey, JSON.stringify({ email: user.email }));
+  const firstName = user.name.split(" ")[0];
+  const welcomeMsg = `Welcome, ${firstName}`;
+
+  alert(welcomeMsg);
+
+  window.location.href = "shop.html";
+}
+
+function currentSession() {
+  return JSON.parse(localStorage.getItem(sessionKey) || sessionStorage.getItem(sessionKey) || "null");
+}
+
+function passwordIsVisible() {
+  return togglePassword.classList.contains("is-active");
+}
+
+function resetPasswordField() {
+  clearTimeout(passwordMaskTimer);
+  rawPassword = "";
+  password.value = "";
+  togglePassword.innerText = "Show";
+  togglePassword.classList.remove("is-active");
+}
+
+function syncPasswordField(showLastCharacter = false) {
+  const passwordMaskCharacter = "\u2022";
+
+  if (passwordIsVisible()) {
+    password.value = rawPassword;
+  } else {
+    const trailingCharacter = showLastCharacter && rawPassword ? rawPassword.slice(-1) : "";
+    const maskedLength = Math.max(0, rawPassword.length - trailingCharacter.length);
+    password.value = `${passwordMaskCharacter.repeat(maskedLength)}${trailingCharacter}`;
+  }
+
+  requestAnimationFrame(() => {
+    password.setSelectionRange(password.value.length, password.value.length);
+  });
+}
+
+function schedulePasswordMask() {
+  clearTimeout(passwordMaskTimer);
+  if (passwordIsVisible()) return;
+
+  passwordMaskTimer = setTimeout(() => {
+    syncPasswordField(false);
+  }, passwordMaskDelay);
+}
+
+function replacePasswordText(start, end, text) {
+  rawPassword = `${rawPassword.slice(0, start)}${text}${rawPassword.slice(end)}`;
+  return start + text.length;
+}
+
+showLogin.addEventListener("click", () => setMode("login"));
+showSignup.addEventListener("click", () => setMode("signup"));
+
+togglePassword.addEventListener("click", () => {
+  const shouldShow = !passwordIsVisible();
+  clearTimeout(passwordMaskTimer);
+  togglePassword.innerText = shouldShow ? "Hide" : "Show";
+  togglePassword.classList.toggle("is-active", shouldShow);
+  syncPasswordField(false);
+});
+
+password.addEventListener("beforeinput", event => {
+  if (passwordIsVisible()) return;
+
+  const start = password.selectionStart ?? rawPassword.length;
+  const end = password.selectionEnd ?? rawPassword.length;
+  let nextCaret = start;
+  let showLastCharacter = false;
+
+  if (event.inputType === "insertText" || event.inputType === "insertCompositionText") {
+    event.preventDefault();
+    nextCaret = replacePasswordText(start, end, event.data || "");
+    showLastCharacter = Boolean(event.data);
+  } else if (event.inputType === "deleteContentBackward") {
+    event.preventDefault();
+    if (start !== end) {
+      nextCaret = replacePasswordText(start, end, "");
+    } else if (start > 0) {
+      rawPassword = `${rawPassword.slice(0, start - 1)}${rawPassword.slice(end)}`;
+      nextCaret = start - 1;
+    }
+  } else if (event.inputType === "deleteContentForward") {
+    event.preventDefault();
+    if (start !== end) {
+      nextCaret = replacePasswordText(start, end, "");
+    } else {
+      rawPassword = `${rawPassword.slice(0, start)}${rawPassword.slice(start + 1)}`;
+    }
+  } else {
+    return;
+  }
+
+  syncPasswordField(showLastCharacter);
+  requestAnimationFrame(() => {
+    password.setSelectionRange(nextCaret, nextCaret);
+  });
+
+  if (showLastCharacter) {
+    schedulePasswordMask();
+  } else {
+    clearTimeout(passwordMaskTimer);
+  }
+});
+
+password.addEventListener("paste", event => {
+  if (passwordIsVisible()) return;
+
+  event.preventDefault();
+  const start = password.selectionStart ?? rawPassword.length;
+  const end = password.selectionEnd ?? rawPassword.length;
+  const pastedText = event.clipboardData?.getData("text") || "";
+  const nextCaret = replacePasswordText(start, end, pastedText);
+
+  syncPasswordField(Boolean(pastedText));
+  requestAnimationFrame(() => {
+    password.setSelectionRange(nextCaret, nextCaret);
+  });
+  if (pastedText) {
+    schedulePasswordMask();
+  }
+});
+
+password.addEventListener("input", () => {
+  if (!passwordIsVisible()) return;
+
+  rawPassword = password.value;
+});
+
+authForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const emailValue = email.value.trim().toLowerCase();
+  const passwordValue = rawPassword;
+  const emailIsValid = /^[^\s@]+@gmail\.com$/.test(emailValue);
+  const allUsers = users();
+
+  // Clear all error messages
+  document.getElementById("nameError").innerText = "";
+  document.getElementById("emailError").innerText = "";
+  document.getElementById("passwordError").innerText = "";
+  authMessage.innerText = "";
+
+  if (mode === "signup") {
+    const nameValue = accountName.value.trim();
+    let hasError = false;
+
+    if (!nameValue) {
+      document.getElementById("nameError").innerText = "Enter your full name";
+      hasError = true;
+    }
+    if (!emailIsValid) {
+      document.getElementById("emailError").innerText = "Incorrect email format";
+      hasError = true;
+    }
+    if (passwordValue.length < 8) {
+      document.getElementById("passwordError").innerText = "Password must be at least 8 characters";
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (allUsers.some(user => user.email === emailValue)) {
+      document.getElementById("emailError").innerText = "An account already exists for this email";
+      return;
+    }
+
+    const user = { name: nameValue, email: emailValue, password: passwordValue };
+    saveUsers([...allUsers, user]);
+    const storage = rememberMe.checked ? localStorage : sessionStorage;
+    storage.setItem(sessionKey, JSON.stringify({ email: user.email }));
+    const firstName = user.name.split(" ")[0];
+    alert(`Welcome, ${firstName}`);
+    window.location.href = "shop.html";
+    return;
+  }
+
+  let hasError = false;
+  if (!emailIsValid) {
+    document.getElementById("emailError").innerText = "Email must end with @gmail.com";
+    hasError = true;
+  }
+  if (passwordValue.length < 8) {
+    document.getElementById("passwordError").innerText = "Password must be at least 8 characters";
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  const user = allUsers.find(savedUser => savedUser.email === emailValue && savedUser.password === passwordValue);
+  if (!user) {
+    authMessage.innerText = "No account matches those details";
+    return;
+  }
+
+  setSession(user);
+});
+
+document.getElementById("logout").addEventListener("click", () => {
+  localStorage.removeItem(sessionKey);
+  sessionStorage.removeItem(sessionKey);
+  showAuth();
+  setMode("login");
+});
+
+const session = currentSession();
+const signedInUser = session ? users().find(user => user.email === session.email) : null;
+if (signedInUser) {
+  showAccount(signedInUser);
+} else {
+  showAuth();
+}
+</script>
+
+</body>
+</html>

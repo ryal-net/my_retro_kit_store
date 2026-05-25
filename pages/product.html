@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Product</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="product-detail">
+  <section class="product-layout">
+    <div class="product-media">
+      <div class="product-picture">
+        <span>Jersey image</span>
+      </div>
+    </div>
+
+    <div class="product-info">
+      <dl class="product-specs">
+        <div>
+          <dt>Team</dt>
+          <dd id="team"></dd>
+        </div>
+        <div>
+          <dt>Season / Year</dt>
+          <dd id="seasonYear"></dd>
+        </div>
+        <div>
+          <dt>Brand</dt>
+          <dd id="brand"></dd>
+        </div>
+        <div>
+          <dt>Kit Type</dt>
+          <dd id="type"></dd>
+        </div>
+        <div>
+          <dt>Price</dt>
+          <dd id="price"></dd>
+        </div>
+      </dl>
+
+      <fieldset class="size-picker">
+        <legend>
+          <span class="size-info">Size<span class="size-info-popover" role="tooltip">(Bust, Length)cm</span></span>
+        </legend>
+        <div class="size-options" id="sizeOptions">
+          <label>
+            <input type="radio" name="size" value="XS">
+            <span data-fit="86, 66">XS</span>
+          </label>
+          <label>
+            <input type="radio" name="size" value="S">
+            <span data-fit="92, 68">S</span>
+          </label>
+          <label>
+            <input type="radio" name="size" value="M" checked>
+            <span data-fit="98, 70">M</span>
+          </label>
+          <label>
+            <input type="radio" name="size" value="L">
+            <span data-fit="104, 72">L</span>
+          </label>
+          <label>
+            <input type="radio" name="size" value="XL">
+            <span data-fit="112, 74">XL</span>
+          </label>
+          <label>
+            <input type="radio" name="size" value="XXL">
+            <span data-fit="120, 76">XXL</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="quantity-picker">
+        <span>Quantity</span>
+        <div class="quantity-stepper">
+          <button id="decreaseQty" type="button">-</button>
+          <input id="quantity" type="number" min="1" max="20" value="1">
+          <button id="increaseQty" type="button">+</button>
+        </div>
+      </div>
+
+      <div class="cart-action">
+        <button id="add">Add to Cart</button>
+        <p class="cart-message" id="cartMessage"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="../script.js"></script>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const name = params.get("name");
+
+const product = products.find(p => p.name === name) || products[0];
+
+if (!product) {
+  document.querySelector(".product-detail").innerHTML = `
+    <h1>Product Not Found</h1>
+  `;
+} else {
+  const seasonYear = product.season === product.year
+    ? product.year
+    : `${product.season} / ${product.year}`;
+
+  document.getElementById("team").innerText = product.team;
+  document.getElementById("seasonYear").innerText = seasonYear;
+  document.getElementById("brand").innerText = product.brand;
+  document.getElementById("type").innerText = product.type;
+  document.getElementById("price").innerText = formatPrice(priceNumber(product.price));
+
+  const picture = document.querySelector(".product-picture");
+  renderProductImage(picture, product, "eager");
+
+  const quantity = document.getElementById("quantity");
+
+  function cleanQuantity(value) {
+    return Math.min(20, Math.max(1, Number(value) || 1));
+  }
+
+  document.getElementById("decreaseQty").addEventListener("click", () => {
+    quantity.value = cleanQuantity(Number(quantity.value) - 1);
+  });
+
+  document.getElementById("increaseQty").addEventListener("click", () => {
+    quantity.value = cleanQuantity(Number(quantity.value) + 1);
+  });
+
+  quantity.addEventListener("input", () => {
+    quantity.value = cleanQuantity(quantity.value);
+  });
+
+  document.getElementById("add").onclick = () => {
+    const size = document.querySelector("input[name='size']:checked").value;
+    const amount = cleanQuantity(quantity.value);
+    addToCart(product.name, size, amount);
+    const message = document.getElementById("cartMessage");
+    message.innerText = `Added ${amount} size ${size} to cart`;
+    message.classList.add("show");
+
+    setTimeout(() => {
+      message.classList.remove("show");
+      message.innerText = "";
+    }, 2000);
+  };
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cart</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand-menu">
+    <a class="logo" href="../index.html">RetroKits</a>
+    <button class="menu-toggle" type="button">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+  <nav class="site-menu" id="siteMenu">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    <button id="themeToggle" type="button">Toggle Theme</button>
+  </nav>
+
+  <div class="navbar-actions">
+    <a class="cart-icon-link" href="cart.html" aria-label="Cart">
+      <img class="cart-icon" data-cart-icon alt="Cart">
+    </a>
+    <a class="profile-link" href="profile.html">
+      <span class="profile-icon"></span>
+    </a>
+  </div>
+</header>
+
+<main class="cart-page">
+  <h1>Cart</h1>
+  <p class="cart-empty" id="emptyCart"></p>
+  <ul class="cart-list" id="cartList"></ul>
+
+  <div class="cart-summary">
+    <span>Total</span>
+    <strong id="cartTotal">&#8358;0</strong>
+  </div>
+
+  <div class="cart-actions">
+    <a class="btn" id="checkoutLink" href="checkout.html">Checkout</a>
+    <button class="btn-secondary" id="clearCart" type="button">Clear Cart</button>
+  </div>
+
+  <div class="cart-undo" id="cartUndo"></div>
+</main>
+
+<script src="../script.js"></script>
+<script>
+renderCartPage();
+
+document.getElementById("clearCart").addEventListener("click", () => {
+  const removedItems = clearCart();
+  renderCartPage();
+  showCartUndo(removedItems, "Cleared cart");
+});
+</script>
+</body>
+</html>
