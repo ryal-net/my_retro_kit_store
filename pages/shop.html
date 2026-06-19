@@ -39,13 +39,48 @@
       <div class="control-panel">
         <h2 class="panel-heading">Search</h2>
         <div class="panel-body" id="searchPanel">
-          <input class="shop-search-input" id="shopSearch" type="search">
+          <input class="shop-search-input" id="shopSearch" type="search" placeholder="Search kits...">
         </div>
       </div>
-
     </aside>
 
     <section class="shop-results">
+      <!-- Filter & Sort Section -->
+      <div class="filter-sort-container">
+        <button class="filter-sort-toggle" id="filterSortToggle" aria-expanded="true" aria-label="Toggle filters and sort">
+          <span class="toggle-label">Filters & Sort</span>
+          <span class="toggle-icon">−</span>
+        </button>
+        
+        <div class="filter-sort-content" id="filterSortContent">
+          <div class="filter-sort-controls">
+            <!-- Sort Controls -->
+            <div class="sort-section">
+              <label for="sortBy" class="control-label">Sort By</label>
+              <select id="sortBy" class="sort-select">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="year-asc">Year (Oldest)</option>
+                <option value="year-desc">Year (Newest)</option>
+              </select>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-section">
+              <label class="control-label">Filters</label>
+              <div class="filter-group">
+                <label class="filter-option">
+                  <input type="checkbox" id="filterActive" class="filter-checkbox">
+                  <span>Show All Items</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="products-divider">
+
       <p id="shopEmpty" class="shop-empty"></p>
       <div class="grid shop-grid" id="shop-grid"></div>
       <nav class="pagination" id="shopPagination"></nav>
