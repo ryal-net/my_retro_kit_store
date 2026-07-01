@@ -65,30 +65,7 @@
         <input id="address" placeholder="Address">
       </label>
 
-      <fieldset class="payment-module">
-        <legend>Payment</legend>
-        <label>
-          Cardholder Name
-          <input id="cardName" autocomplete="cc-name" placeholder="Name on card">
-        </label>
-        <label>
-          Card Number
-          <input id="cardNumber" autocomplete="cc-number" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242">
-        </label>
-        <div class="payment-row">
-          <label>
-            Expiry
-            <input id="cardExpiry" autocomplete="cc-exp" inputmode="numeric" maxlength="5" placeholder="MM/YY">
-          </label>
-          <label>
-            CVV
-            <input id="cardCvv" autocomplete="cc-csc" inputmode="numeric" maxlength="4" placeholder="123">
-          </label>
-        </div>
-        <p class="payment-note">Card details are validated in this browser. Only the card brand and last four digits are saved.</p>
-      </fieldset>
-
-      <button type="submit">Pay & Place Order</button>
+      <button type="submit">Place Order</button>
       <p class="cart-message" id="orderMessage"></p>
     </form>
   </section>
@@ -108,87 +85,9 @@ const customerName = document.getElementById("customerName");
 const email = document.getElementById("email");
 const phone = document.getElementById("phone");
 const address = document.getElementById("address");
-const cardName = document.getElementById("cardName");
-const cardNumber = document.getElementById("cardNumber");
-const cardExpiry = document.getElementById("cardExpiry");
-const cardCvv = document.getElementById("cardCvv");
-
-// [customerName, email, phone, address, cardName, cardNumber, cardExpiry, cardCvv].forEach(input => {
-//   input.dataset.placeholder = input.placeholder;
-//   input.addEventListener("input", () => {
-//     input.classList.remove("input-error");
-//     input.placeholder = input.dataset.placeholder;
-//   });
-// });
 
 function digitsOnly(value) {
   return value.replace(/\D/g, "");
-}
-
-function formatCardNumber(value) {
-  return digitsOnly(value).slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
-}
-
-function formatExpiry(value) {
-  const digits = digitsOnly(value).slice(0, 4);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-}
-
-function expiryParts(value) {
-  const digits = digitsOnly(value);
-  return {
-    month: Number(digits.slice(0, 2)),
-    year: Number(`20${digits.slice(2, 4)}`),
-    complete: digits.length === 4
-  };
-}
-
-function cardBrand(number) {
-  const digits = digitsOnly(number);
-
-  if (/^4/.test(digits)) return "Visa";
-  if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]|7[01]|720)/.test(digits)) return "Mastercard";
-  if (/^3[47]/.test(digits)) return "American Express";
-  return "Card";
-}
-
-function cardNumberIsValid(value) {
-  const digits = digitsOnly(value);
-
-  if (digits.length < 13 || digits.length > 19) {
-    return false;
-  }
-
-  let sum = 0;
-  let shouldDouble = false;
-
-  for (let index = digits.length - 1; index >= 0; index -= 1) {
-    let digit = Number(digits[index]);
-
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-
-  return sum % 10 === 0;
-}
-
-function expiryIsValid(value) {
-  const { month, year, complete } = expiryParts(value);
-
-  if (!complete || month < 1 || month > 12) {
-    return false;
-  }
-
-  const today = new Date();
-  const expiryDate = new Date(year, month, 0, 23, 59, 59);
-  const maxExpiryDate = new Date(today.getFullYear() + 15, today.getMonth(), today.getDate());
-
-  return expiryDate >= today && expiryDate <= maxExpiryDate;
 }
 
 function phoneIsValid(value) {
@@ -217,36 +116,16 @@ function queueConfirmationEmail(order) {
   localStorage.setItem(emailQueueKey, JSON.stringify(queue));
 }
 
-cardNumber.addEventListener("input", () => {
-  cardNumber.value = formatCardNumber(cardNumber.value);
-});
-
-cardExpiry.addEventListener("input", () => {
-  cardExpiry.value = formatExpiry(cardExpiry.value);
-  const { month, complete } = expiryParts(cardExpiry.value);
-  cardExpiry.setCustomValidity(complete && (month < 1 || month > 12) ? "Use a real month from 01 to 12" : "");
-});
-
-cardCvv.addEventListener("input", () => {
-  cardCvv.value = digitsOnly(cardCvv.value).slice(0, 4);
-});
-
 document.getElementById("checkoutForm").addEventListener("submit", event => {
   event.preventDefault();
   const message = document.getElementById("orderMessage");
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
-  const cardDigits = digitsOnly(cardNumber.value);
-  const cvvDigits = digitsOnly(cardCvv.value);
 
   [
     { input: customerName, valid: customerName.value.trim(), error: "Enter your full name" },
     { input: email, valid: emailIsValid, error: "Enter a valid email" },
     { input: phone, valid: phoneIsValid(phone.value), error: "Enter your phone number" },
-    { input: address, valid: address.value.trim(), error: "Enter your address" },
-    { input: cardName, valid: cardName.value.trim(), error: "Enter the cardholder name" },
-    { input: cardNumber, valid: cardNumberIsValid(cardNumber.value), error: "Enter a valid card number" },
-    { input: cardExpiry, valid: expiryIsValid(cardExpiry.value), error: "Use a valid MM/YY" },
-    { input: cardCvv, valid: cvvDigits.length === 3 || cvvDigits.length === 4, error: "Enter CVV" }
+    { input: address, valid: address.value.trim(), error: "Enter your address" }
   ].forEach(field => {
     field.input.classList.toggle("input-error", !field.valid);
     if (!field.valid) {
@@ -259,11 +138,7 @@ document.getElementById("checkoutForm").addEventListener("submit", event => {
     !customerName.value.trim() ||
     !emailIsValid ||
     !phoneIsValid(phone.value) ||
-    !address.value.trim() ||
-    !cardName.value.trim() ||
-    !cardNumberIsValid(cardNumber.value) ||
-    !expiryIsValid(cardExpiry.value) ||
-    !(cvvDigits.length === 3 || cvvDigits.length === 4)
+    !address.value.trim()
   ) {
     message.innerText = "";
     message.classList.remove("show");
@@ -299,11 +174,7 @@ document.getElementById("checkoutForm").addEventListener("submit", event => {
       provider: "browser-demo",
       reference: paymentReference(),
       amount: orderTotal,
-      paidAt: new Date().toISOString(),
-      card: {
-        brand: cardBrand(cardDigits),
-        last4: cardDigits.slice(-4)
-      }
+      paidAt: new Date().toISOString()
     },
     confirmationEmail: {
       to: email.value.trim(),
@@ -323,7 +194,7 @@ document.getElementById("checkoutForm").addEventListener("submit", event => {
 
   clearCart();
   renderCheckoutPage();
-  message.innerText = "Payment approved. Order placed successfully.";
+  message.innerText = "Order placed successfully.";
   message.classList.add("show");
 
   setTimeout(() => {
