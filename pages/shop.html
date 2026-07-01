@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shop</title>
   <link rel="stylesheet" href="../style.css">
 </head>
@@ -9,11 +11,76 @@
 <header class="navbar">
   <div class="brand-menu">
     <a class="logo" href="../index.html">RetroKits</a>
-    <button class="menu-toggle" type="button">
+    <button class="menu-toggle" type="button" aria-label="Open menu">
       <span></span>
       <span></span>
       <span></span>
     </button>
+    <div class="nav-search" id="navSearch">
+      <button class="nav-icon-button search-toggle" id="searchToggle" type="button" aria-label="Open search" aria-expanded="false">
+        <img class="nav-tool-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroscale='%232b2926' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E" alt="">
+      </button>
+      <input class="shop-search-input nav-search-input" id="shopSearch" type="search" placeholder="Search kits..." aria-label="Search kits">
+      <div class="nav-filter-sort">
+        <button class="nav-icon-button filter-sort-toggle" id="filterSortToggle" type="button" aria-expanded="false" aria-label="Open filters and sort">
+          <img class="nav-tool-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%232b2926' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16'/%3E%3Cpath d='M7 12h10'/%3E%3Cpath d='M10 18h4'/%3E%3C/svg%3E" alt="">
+        </button>
+        <div class="filter-sort-content" id="filterSortContent" aria-hidden="true">
+          <div class="filter-sort-heading-row">
+            <h2 class="filter-sort-heading">Sort and Filter</h2>
+            <button class="clear-filters-button" id="clearSortFilter" type="button" aria-label="Clear sort and filters" disabled>
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="filter-sort-controls">
+            <section class="filter-sort-section">
+              <h3>Sort</h3>
+              <div class="sort-row">
+                <label class="control-label" for="sortBy">
+                  Field
+                  <select id="sortBy" class="sort-select" aria-label="Sort field">
+                    <option value="" selected disabled hidden>Sort by</option>
+                    <option value="name">Name</option>
+                    <option value="year">Year</option>
+                    <option value="price">Price</option>
+                  </select>
+                </label>
+                <button class="sort-direction-toggle" id="sortDirection" type="button" data-direction="asc" aria-label="Sort ascending">
+                  <span aria-hidden="true">Asc</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="filter-sort-section">
+              <h3>Filter</h3>
+              <div class="filter-categories">
+                <div class="filter-category">
+                  <button class="filter-category-toggle" type="button" aria-expanded="false" aria-controls="filterTypeOptions">
+                    <span>Type</span>
+                    <span aria-hidden="true">+</span>
+                  </button>
+                  <div class="filter-check-options" id="filterTypeOptions" hidden></div>
+                </div>
+                <div class="filter-category">
+                  <button class="filter-category-toggle" type="button" aria-expanded="false" aria-controls="filterBrandOptions">
+                    <span>Brand</span>
+                    <span aria-hidden="true">+</span>
+                  </button>
+                  <div class="filter-check-options" id="filterBrandOptions" hidden></div>
+                </div>
+                <div class="filter-category">
+                  <button class="filter-category-toggle" type="button" aria-expanded="false" aria-controls="filterDecadeOptions">
+                    <span>Decade</span>
+                    <span aria-hidden="true">+</span>
+                  </button>
+                  <div class="filter-check-options" id="filterDecadeOptions" hidden></div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <nav class="site-menu" id="siteMenu">
@@ -35,52 +102,7 @@
 
 <main class="shop-page">
   <div class="shop-layout">
-    <aside class="shop-sidebar" id="shopControls">
-      <div class="control-panel">
-        <h2 class="panel-heading">Search</h2>
-        <div class="panel-body" id="searchPanel">
-          <input class="shop-search-input" id="shopSearch" type="search" placeholder="Search kits...">
-        </div>
-      </div>
-    </aside>
-
     <section class="shop-results">
-      <!-- Filter & Sort Section -->
-      <div class="filter-sort-container">
-        <button class="filter-sort-toggle" id="filterSortToggle" aria-expanded="true" aria-label="Toggle filters and sort">
-          <span class="toggle-label">Filters & Sort</span>
-          <span class="toggle-icon">−</span>
-        </button>
-        
-        <div class="filter-sort-content" id="filterSortContent">
-          <div class="filter-sort-controls">
-            <!-- Sort Controls -->
-            <div class="sort-section">
-              <label for="sortBy" class="control-label">Sort By</label>
-              <select id="sortBy" class="sort-select">
-                <option value="name-asc">Name (A-Z)</option>
-                <option value="name-desc">Name (Z-A)</option>
-                <option value="year-asc">Year (Oldest)</option>
-                <option value="year-desc">Year (Newest)</option>
-              </select>
-            </div>
-
-            <!-- Filter Controls -->
-            <div class="filter-section">
-              <label class="control-label">Filters</label>
-              <div class="filter-group">
-                <label class="filter-option">
-                  <input type="checkbox" id="filterActive" class="filter-checkbox">
-                  <span>Show All Items</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <hr class="products-divider">
-
       <p id="shopEmpty" class="shop-empty"></p>
       <div class="grid shop-grid" id="shop-grid"></div>
       <nav class="pagination" id="shopPagination"></nav>

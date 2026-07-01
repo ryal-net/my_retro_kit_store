@@ -315,7 +315,7 @@ authForm.addEventListener("submit", event => {
       return;
     }
 
-    const user = { name: nameValue, email: emailValue, password: passwordValue };
+    const user = { name: nameValue, email: emailValue, password: passwordValue, createdAt: new Date().toISOString() };
     saveUsers([...allUsers, user]);
     const storage = rememberMe.checked ? localStorage : sessionStorage;
     storage.setItem(sessionKey, JSON.stringify({ email: user.email }));
